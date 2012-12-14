@@ -12,9 +12,9 @@ import (
 // Call in its own goroutine to rebuild docs when buildChan is sent events
 func builder(path string, buildChan chan bool) {
 	for {
+		// Block waiting for a new event
 		select {
 		case <-buildChan:
-			log.Printf("Received change\n")
 		}
 
 		// Pause briefly as editors often emit multiple events at once
@@ -32,21 +32,12 @@ func builder(path string, buildChan chan bool) {
 		if err != nil {
 			log.Fatalf("Error running `make html`: %v\n", err)
 		}
-		log.Printf("make html >>\n%s", out)
+		log.Printf("make html\n%s", out)
 	}
 }
 
-// Starts watching path for changes
-func Watch(path string) {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer watcher.Close()
-
-	var walkAndWatch func(path string, fi os.FileInfo, err error) error
-	watched := 0
-	walkAndWatch = func(path string, fi os.FileInfo, err error) error {
+func walkAndWatch(path string, w *fsnotify.Watcher) (watched uint) {
+	f := func(path string, fi os.FileInfo, err error) error {
 		if fi.IsDir() {
 			// Skip hidden directories
 			if fi.Name()[0] == '.' {
@@ -59,7 +50,7 @@ func Watch(path string) {
 			}
 
 			// Watch this path
-			err = watcher.Watch(path)
+			err = w.Watch(path)
 			watched++
 			if err != nil {
 				log.Fatal(err)
@@ -68,10 +59,20 @@ func Watch(path string) {
 		return nil
 	}
 
-	err = filepath.Walk(path, walkAndWatch)
+	err := filepath.Walk(path, f)
 	if err != nil && err != filepath.SkipDir {
 		log.Fatal("Error walking tree: %v\n", err)
 	}
+	return
+}
+
+// Starts watching path for changes
+func Watch(path string) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer watcher.Close()
 
 	// Channel to notify builder goroutine to rebuild
 	// Buffered, but it should never have more than 1 item
@@ -80,15 +81,14 @@ func Watch(path string) {
 	// Start builder goroutine
 	go builder(path, buildChan)
 
-	log.Printf("Watching %d directories\n", watched)
+	log.Printf("Watching %d directories\n", walkAndWatch(path, watcher))
 
 	for {
 		select {
 		case e := <-watcher.Event:
-			log.Printf("Event: %s %v\n", e.Name, e)
+			log.Printf("Event: %v\n", e)
 			// Only signal a change if there's no pending changes
 			if len(buildChan) == 0 {
-				log.Printf("Emitting change event\n")
 				buildChan <- true
 			}
 		}
