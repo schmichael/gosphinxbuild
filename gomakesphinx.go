@@ -13,9 +13,7 @@ import (
 func builder(path string, buildChan chan bool) {
 	for {
 		// Block waiting for a new event
-		select {
-		case <-buildChan:
-		}
+		<-buildChan
 
 		// Pause briefly as editors often emit multiple events at once
 		time.Sleep(100 * time.Millisecond)
