@@ -1,7 +1,6 @@
-package main
+package gosphinxbuild
 
 import (
-	"flag"
 	fsnotify "github.com/howeyc/fsnotify"
 	"log"
 	"os"
@@ -9,30 +8,6 @@ import (
 	filepath "path/filepath"
 	"time"
 )
-
-var path = flag.String("path", ".", "path containing a sphinx Makefile")
-
-func main() {
-	flag.Parse()
-
-	// Only sanity check *path if it's not cwd
-	if *path != "." {
-		fi, err := os.Stat(*path)
-		if err != nil {
-			log.Fatalf("Could not stat %v: %v\n", *path, err)
-		}
-		if !fi.IsDir() {
-			log.Fatalf("Path must be a directory. %s is not.\n", *path)
-		}
-	}
-
-	ap, err := filepath.Abs(*path)
-	if err != nil {
-		log.Fatalf("Could not resolve path %s: %v\n", *path, err)
-	}
-
-	start(ap)
-}
 
 // Call in its own goroutine to rebuild docs when buildChan is sent events
 func builder(path string, buildChan chan bool) {
@@ -62,7 +37,7 @@ func builder(path string, buildChan chan bool) {
 }
 
 // Starts watching path for changes
-func start(path string) {
+func Watch(path string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -70,6 +45,7 @@ func start(path string) {
 	defer watcher.Close()
 
 	var walkAndWatch func(path string, fi os.FileInfo, err error) error
+	watched := 0
 	walkAndWatch = func(path string, fi os.FileInfo, err error) error {
 		if fi.IsDir() {
 			// Skip hidden directories
@@ -77,8 +53,14 @@ func start(path string) {
 				return filepath.SkipDir
 			}
 
+			// Skip _build direcotry
+			if fi.Name() == "_build" {
+					return filepath.SkipDir
+			}
+
 			// Watch this path
 			err = watcher.Watch(path)
+			watched++
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -98,7 +80,7 @@ func start(path string) {
 	// Start builder goroutine
 	go builder(path, buildChan)
 
-	log.Printf("Watching\n")
+	log.Printf("Watching %d directories\n", watched)
 
 	for {
 		select {
