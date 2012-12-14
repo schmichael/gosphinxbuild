@@ -10,8 +10,6 @@ import (
     "time"
 )
 
-const RST_EXT = ".rst"
-
 var path = flag.String("path", ".", "path containing a sphinx Makefile")
 
 func main() {
