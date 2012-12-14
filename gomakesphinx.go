@@ -1,11 +1,11 @@
 package gosphinxbuild
 
 import (
-	fsnotify "github.com/howeyc/fsnotify"
+	"github.com/howeyc/fsnotify"
 	"log"
 	"os"
-	exec "os/exec"
-	filepath "path/filepath"
+	"os/exec"
+	"path/filepath"
 	"time"
 )
 
