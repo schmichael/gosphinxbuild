@@ -1,7 +1,7 @@
 Sphinx Autobuilder
 ==================
 
-So you right Sphinx_ docs? That's great. Want an autobuilder? Here's one:
+So you write Sphinx_ docs? That's great. Want an autobuilder? Here's one:
 
 .. code-block::
 
