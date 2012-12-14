@@ -36,6 +36,7 @@ func builder(path string, buildChan chan bool) {
 	}
 }
 
+// Walk a path and watch non-hidden or build directories
 func walkAndWatch(path string, w *fsnotify.Watcher) (watched uint) {
 	f := func(path string, fi os.FileInfo, err error) error {
 		if fi.IsDir() {
@@ -81,12 +82,24 @@ func Watch(path string) {
 	// Start builder goroutine
 	go builder(path, buildChan)
 
-	log.Printf("Watching %d directories\n", walkAndWatch(path, watcher))
+	watched := walkAndWatch(path, watcher)
+	log.Printf("Watching %d directories\n", watched)
 
 	for {
 		select {
 		case e := <-watcher.Event:
 			log.Printf("Event: %v\n", e)
+			if e.IsCreate() && e.Name != "" {
+				// See if a new directory was created that needs watching
+				fi, err := os.Stat(e.Name)
+				if err == nil {
+					if fi.IsDir() {
+						// It's a new directory! Let's walk it
+						watched = walkAndWatch(e.Name, watcher)
+						log.Printf("Watched %d new directories", watched)
+					}
+				}
+			}
 			// Only signal a change if there's no pending changes
 			if len(buildChan) == 0 {
 				buildChan <- true
