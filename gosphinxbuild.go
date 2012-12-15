@@ -1,3 +1,5 @@
+// Package gosphinxbuild exports a function to run "make html" when files
+// change on a path
 package gosphinxbuild
 
 import (
@@ -95,6 +97,8 @@ func Watch(path string) {
 					watched = walkAndWatch(e.Name, watcher)
 					log.Printf("Watched %d new directories", watched)
 				}
+			} else {
+				log.Printf("Error Stat()ing %s: %v", e.Name, err)
 			}
 		}
 		// Only signal a change if there's no pending changes
