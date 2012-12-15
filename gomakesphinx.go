@@ -84,24 +84,22 @@ func Watch(path string) {
 	log.Printf("Watching %d directories\n", watched)
 
 	for {
-		select {
-		case e := <-watcher.Event:
-			log.Printf("Event: %v\n", e)
-			if e.IsCreate() && e.Name != "" {
-				// See if a new directory was created that needs watching
-				fi, err := os.Stat(e.Name)
-				if err == nil {
-					if fi.IsDir() {
-						// It's a new directory! Let's walk it
-						watched = walkAndWatch(e.Name, watcher)
-						log.Printf("Watched %d new directories", watched)
-					}
+		e := <-watcher.Event
+		log.Printf("Event: %v\n", e)
+		if e.IsCreate() && e.Name != "" {
+			// See if a new directory was created that needs watching
+			fi, err := os.Stat(e.Name)
+			if err == nil {
+				if fi.IsDir() {
+					// It's a new directory! Let's walk it
+					watched = walkAndWatch(e.Name, watcher)
+					log.Printf("Watched %d new directories", watched)
 				}
 			}
-			// Only signal a change if there's no pending changes
-			if len(buildChan) == 0 {
-				buildChan <- true
-			}
+		}
+		// Only signal a change if there's no pending changes
+		if len(buildChan) == 0 {
+			buildChan <- true
 		}
 	}
 }
