@@ -36,9 +36,9 @@ func builder(path string, cmd []string, buildChan chan bool) {
 		}
 		out, err := c.CombinedOutput()
 		if err != nil {
-			log.Fatalf("Error running `make html`: %v\n", err)
+			log.Fatalf("Error running `%v`: %v\n", cmd, err)
 		}
-		log.Printf("%v\n%s", c, out)
+		log.Printf("%v\n%s", cmd, out)
 	}
 }
 
@@ -51,8 +51,13 @@ func walkAndWatch(path string, w *fsnotify.Watcher) (watched uint) {
 				return filepath.SkipDir
 			}
 
-			// Skip _build direcotry
-			if fi.Name() == "_build" {
+			// Skip *build* directories
+			if strings.Contains(fi.Name(), "build") {
+					return filepath.SkipDir
+			}
+
+			// Skip *static* directories
+			if strings.Contains(fi.Name(), "static") {
 					return filepath.SkipDir
 			}
 
