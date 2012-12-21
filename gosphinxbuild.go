@@ -112,7 +112,7 @@ func Watch(path string, cmd string) {
 				continue
 		}
 
-		log.Printf("Event--: %v\n", e)
+		log.Printf("Event: %v\n", e)
 
 		if e.IsCreate() && e.Name != "" {
 			// See if a new directory was created that needs watching
