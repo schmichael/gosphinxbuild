@@ -34,11 +34,11 @@ func builder(path string, cmd []string, buildChan chan bool) {
 		} else {
 			c = exec.Command(cmd[0], cmd[1:]...)
 		}
-		out, err := c.Output()
+		out, err := c.CombinedOutput()
 		if err != nil {
 			log.Fatalf("Error running `make html`: %v\n", err)
 		}
-		log.Printf("make html\n%s", out)
+		log.Printf("%v\n%s", c, out)
 	}
 }
 
