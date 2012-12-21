@@ -99,9 +99,21 @@ func Watch(path string, cmd string) {
 	watched := walkAndWatch(path, watcher)
 	log.Printf("Watching %d directories\n", watched)
 
+	// Run the command on initial run
+	buildChan <- true
 	for {
 		e := <-watcher.Event
-		log.Printf("Event: %v\n", e)
+
+		// Ignore swap files
+		switch {
+			case strings.HasSuffix(e.Name, ".swp"):
+				continue
+			case strings.HasSuffix(e.Name, "~"):
+				continue
+		}
+
+		log.Printf("Event--: %v\n", e)
+
 		if e.IsCreate() && e.Name != "" {
 			// See if a new directory was created that needs watching
 			fi, err := os.Stat(e.Name)
