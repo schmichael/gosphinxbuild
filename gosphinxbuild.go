@@ -8,11 +8,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 // Call in its own goroutine to rebuild docs when buildChan is sent events
-func builder(path string, buildChan chan bool) {
+func builder(path string, cmd []string, buildChan chan bool) {
 	for {
 		// Block waiting for a new event
 		<-buildChan
@@ -27,8 +28,13 @@ func builder(path string, buildChan chan bool) {
 		}
 
 		// And finally actually build the thing
-		cmd := exec.Command("make", "html")
-		out, err := cmd.Output()
+		var c *exec.Cmd
+		if len(cmd) == 1 {
+			c = exec.Command(cmd[0])
+		} else {
+			c = exec.Command(cmd[0], cmd[1:]...)
+		}
+		out, err := c.Output()
 		if err != nil {
 			log.Fatalf("Error running `make html`: %v\n", err)
 		}
@@ -68,7 +74,7 @@ func walkAndWatch(path string, w *fsnotify.Watcher) (watched uint) {
 }
 
 // Starts watching path for changes
-func Watch(path string) {
+func Watch(path string, cmd string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -79,8 +85,11 @@ func Watch(path string) {
 	// Buffered, but it should never have more than 1 item
 	buildChan := make(chan bool, 1)
 
+	// Split command to run on spaces
+	cmdArgs := strings.Split(cmd, " ")
+
 	// Start builder goroutine
-	go builder(path, buildChan)
+	go builder(path, cmdArgs, buildChan)
 
 	watched := walkAndWatch(path, watcher)
 	log.Printf("Watching %d directories\n", watched)

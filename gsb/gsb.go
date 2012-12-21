@@ -9,6 +9,7 @@ import (
 )
 
 var path = flag.String("path", ".", "path containing a sphinx Makefile")
+var cmd = flag.String("cmd", "make html", "command to run when files change")
 
 func main() {
 	flag.Parse()
@@ -29,5 +30,5 @@ func main() {
 		log.Fatalf("Could not resolve path %s: %v\n", *path, err)
 	}
 
-	gosphinxbuild.Watch(ap)
+	gosphinxbuild.Watch(ap, *cmd)
 }
