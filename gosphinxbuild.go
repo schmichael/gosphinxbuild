@@ -65,7 +65,7 @@ func walkAndWatch(path string, w *fsnotify.Watcher) (watched uint) {
 			err = w.Watch(path)
 			watched++
 			if err != nil {
-				log.Fatal(err)
+				log.Fatalf("Error trying to watch %s:\n%v\n%d paths watched", path, err, watched)
 			}
 		}
 		return nil
